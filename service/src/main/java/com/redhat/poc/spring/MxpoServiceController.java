@@ -17,7 +17,7 @@ import com.redhat.poc.model.Response;
  *
  */
 @RestController
-public class MessageServiceController {
+public class MxpoServiceController {
 	
 	private final AtomicLong counter = new AtomicLong();
 
