@@ -81,7 +81,7 @@
             <marshal id="mapToJson" ref="polineData"/>
             <log id="publishResultLogger" message="${body}"/>
             <to id="publishResultTo" uri="activemq:topic:events.newPoline"/>
-            <log id="publishResultLogger" message="Json message be sent to Topic:events.newPoline"/>
+            <log id="publishResultLogger" message="Json message be sent to topic:events.newPoline"/>
         </route>
         <!--   
         -->

@@ -11,6 +11,7 @@
     <module>model</module>
     <module>service</module>
     <module>hub</module>
+    <module>queue</module>
   </modules>
   <packaging>pom</packaging>
   <properties>
