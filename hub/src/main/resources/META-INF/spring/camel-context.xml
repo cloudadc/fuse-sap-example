@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:camel="http://camel.apache.org/schema/spring"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd                            http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd">
+    <bean class="com.redhat.poc.processor.PropertiesMappingProcessor" id="propsMappingProcessor"/>
+    <bean class="com.redhat.poc.processor.DBMappingProcessor" id="dbMappingProcessor"/>
+    <bean class="com.mysql.jdbc.jdbc2.optional.MysqlDataSource" id="dataSource">
+        <property name="serverName" value="localhost"/>
+        <property name="databaseName" value="test"/>
+        <property name="port" value="3306"/>
+        <property name="user" value="test_user"/>
+        <property name="password" value="redhat"/>
+    </bean>
+    <bean class="org.apache.camel.component.sql.SqlComponent" id="sql">
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+    <bean class="org.apache.activemq.camel.component.ActiveMQComponent" id="activemq">
+        <property name="brokerURL" value="tcp://localhost:61616"/>
+        <property name="userName" value="admin"/>
+        <property name="password" value="admin"/>
+    </bean>
+    <camelContext id="integrationHubContext" xmlns="http://camel.apache.org/schema/spring">
+        <!-- 
+            The 'mxpoProperties' propertyPlaceholder point to a external properties file which used in properties mapping
+         -->
+        <propertyPlaceholder id="mxpoProperties" location="file:/home/kylin/input/properties/mxpoProperties.properties"/>
+        <!-- 
+            The dataFormats are use to marshal Map to JSON format
+         -->
+        <dataFormats>
+            <json id="mxpoData" library="Jackson" unmarshalTypeName="com.redhat.poc.maximo.model.Mxpo"/>
+            <json id="polineData" library="Jackson" unmarshalTypeName="com.redhat.poc.maximo.model.Poline"/>
+        </dataFormats>
+        <!-- 
+           The 'maximoRestConsumerRoute' route will consume IBM Maximo supplied Rest Service 100 times with a time interval 5 minutes;
+           the result JSON of REST will be split to segment and sent to 'propertiesMappingRoute' 
+         -->
+        <route id="maximoRestConsumerRoute">
+            <from id="_from1" uri="timer://maximoRestConsumer?fixedRate=true&amp;period=300000&amp;repeatCount=100"/>
+            <to id="_to1" uri="http://10.66.192.89:8080/mxpo/sample"/>
+            <convertBodyTo id="_convertBodyTo1" type="java.lang.String"/>
+            <log id="maximoRestConsumerLogger" message="IBM Maximo returned content: ${body}"/>
+            <split id="_split1">
+                <jsonpath>$.poline[*]</jsonpath>
+                <to id="_to2" uri="direct:externalPropertiesMapping"/>
+            </split>
+        </route>
+        <!--
+            The 'propertiesMappingRoute' route use the external properties to mapping the json attribute,
+            after the external properties mapping, the json will be send to 'dbMappingRoute'  
+         -->
+        <route id="propertiesMappingRoute">
+            <from id="jsonSplit" uri="direct:externalPropertiesMapping"/>
+            <log id="propertiesMappingLogger" message="The Split segment content: ${body}"/>
+            <setHeader headerName="restype_description" id="_setHeader1">
+                <simple>{{restype_description}}</simple>
+            </setHeader>
+            <setHeader headerName="category_description" id="_setHeader2">
+                <simple>{{category_description}}</simple>
+            </setHeader>
+            <to id="_to3" uri="propsMappingProcessor"/>
+            <log id="propertiesMappingLogger" message="External Properties Mapping result: ${body}"/>
+            <to id="_to4" uri="direct:externalDBMapping"/>
+        </route>
+        <!-- 
+            The 'dbMappingRoute' route will lookup external database further mapping the json attribute,
+            after the database mapping, the json will be send to 'publishResultRoute'
+         -->
+        <route id="dbMappingRoute">
+            <from id="propertiesMapping" uri="direct:externalDBMapping"/>
+            <to id="_to5" uri="sql:SELECT * FROM TAXSMAPPING;"/>
+            <to id="_to6" uri="dbMappingProcessor"/>
+            <log id="dbMappingLogger" message="External DB Mapping result: ${body}"/>
+            <to id="_to7" uri="direct:pulishJsonResult"/>
+        </route>
+        <!-- 
+            The 'publishResultRoute' route will publish the final(transformed, mapped) json to a Message Topic
+         -->
+        <route id="publishResultRoute">
+            <from id="dbMapping" uri="direct:pulishJsonResult"/>
+            <marshal id="mapToJson" ref="polineData"/>
+            <log id="publishResultLogger" message="${body}"/>
+            <to id="publishResultTo" uri="activemq:topic:events.newPoline"/>
+            <log id="publishResultLogger" message="Json message be sent to Topic:events.newPoline"/>
+        </route>
+        <!--   
+        -->
+        <route id="maximoRestListenerRoute">
+            <from id="maximoListenerFrom" uri="jetty:http://0.0.0.0:8180/mxpo?matchOnUriPrefix=true"/>
+            <to id="maximoListenerTo1" uri="jetty:http://10.66.192.89:8080/mxpo?bridgeEndpoint=true&amp;throwExceptionOnFailure=false"/>
+            <log id="maximoListenerLogger" message="Invoke maximo rest service"/>
+            <convertBodyTo id="_convertBodyTo2" type="java.lang.String"/>
+            <log id="maximoListenerLogger" message="IBM Maximo returned content: ${body}"/>
+            <split id="_split2">
+                <jsonpath>$.poline[*]</jsonpath>
+                <to id="maximoListenerTo2" uri="direct:externalPropertiesMapping"/>
+            </split>
+        </route>
+    </camelContext>
+</beans>

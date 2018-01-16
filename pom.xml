@@ -10,6 +10,7 @@
   <modules>
     <module>model</module>
     <module>service</module>
+    <module>hub</module>
   </modules>
   <packaging>pom</packaging>
   <properties>
@@ -139,7 +140,7 @@
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
         <extensions>true</extensions>
-        <version>2.3.5</version>
+        <version>3.3.0</version>
       </plugin>
       <plugin>
         <groupId>org.apache.camel</groupId>

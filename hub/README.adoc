@@ -1,0 +1,5 @@
+= Rest Consumer
+
+* Fuse poll one REST service for MXPO data in JSON format
+* Fuse Split the result of REST service
+* 
