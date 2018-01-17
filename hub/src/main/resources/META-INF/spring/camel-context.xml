@@ -22,8 +22,10 @@
     <camelContext id="integrationHubContext" xmlns="http://camel.apache.org/schema/spring">
         <!-- 
             The 'mxpoProperties' propertyPlaceholder point to a external properties file which used in properties mapping
+            
+            <propertyPlaceholder id="mxpoProperties" location="file:/home/kylin/input/properties/mxpoProperties.properties"/>
          -->
-        <propertyPlaceholder id="mxpoProperties" location="file:/home/kylin/input/properties/mxpoProperties.properties"/>
+        <propertyPlaceholder id="mxpoProperties" location="file:${karaf.data}/mxpoProperties.properties"/>
         <!-- 
             The dataFormats are use to marshal Map to JSON format
          -->
@@ -45,6 +47,7 @@
                 <to id="_to2" uri="direct:externalPropertiesMapping"/>
             </split>
         </route>
+        
         <!--
             The 'propertiesMappingRoute' route use the external properties to mapping the json attribute,
             after the external properties mapping, the json will be send to 'dbMappingRoute'  
