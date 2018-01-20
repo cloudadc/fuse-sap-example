@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:camel="http://camel.apache.org/schema/spring"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd                            http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd">
+    <bean class="org.apache.activemq.camel.component.ActiveMQComponent" id="activemq">
+        <property name="brokerURL" value="#{systemProperties['AMQ_BROKER_URL'] ?: 'tcp://localhost:61616'}"/>
+        <property name="userName" value="#{systemProperties['AMQ_USER'] ?: 'admin'}"/>
+        <property name="password" value="#{systemProperties['AMQ_PASSWORD'] ?: 'admin'}"/>
+    </bean>
+    <!-- Configures an Outbound SAP Connection 
+        Please enter the connection property values for your environment 
+    
+    <bean
+        class="org.fusesource.camel.component.sap.model.rfc.impl.DestinationDataImpl" id="pocDestinationData">
+        <property name="ashost" value="#{systemProperties['jco.client.ashost']}"/>
+        <property name="sysnr" value="#{systemProperties['jco.client.sysnr']}"/>
+        <property name="client" value="#{systemProperties['jco.client.client']}"/>
+        <property name="user" value="#{systemProperties['jco.client.user']}"/>
+        <property name="passwd" value="#{systemProperties['jco.client.passwd']}"/>
+        <property name="lang" value="#{systemProperties['jco.client.lang']}"/>
+    </bean>
+    -->
+    <!-- Configures the Inbound and Outbound SAP Connections 
+    <bean
+        class="org.fusesource.camel.component.sap.SapConnectionConfiguration" id="sap-configuration">
+        <property name="destinationDataStore">
+            <map>
+                <entry key="pocDest" value-ref="pocDestinationData"/>
+            </map>
+        </property>
+    </bean>
+    -->
+    <bean class="com.redhat.poc.processor.CreateE1PISTYRFCrocessor" id="E1PISTYIrfc"/>
+    <camelContext id="sap-rfc-destination-fuse-context" xmlns="http://camel.apache.org/schema/spring">
+        <dataFormats>
+            <json id="polineData" library="Jackson" unmarshalTypeName="com.redhat.poc.model.Poline"/>
+        </dataFormats>
+        <route id="sap-rfc-destination-route">
+            <from id="_from1" uri="activemq:topic:events.newPoline"/>
+            <log id="logger" message="Receive a message from topic:events.newPoline"/>
+            <convertBodyTo id="_convertBodyTo1" type="java.lang.String"/>
+            <unmarshal id="_unmarshal1" ref="polineData"/>
+            <to id="_to2" uri="E1PISTYIrfc"/>
+            <log id="logger" loggingLevel="INFO" message="RFC Request be formated"/>
+            <!--  
+            <to id="_to4" uri="sap-srfc-destination:pocDest:EKSEKS01"/>
+            <log id="logger" message="Send RFC Request to SAP"/>
+            -->
+        </route>
+    </camelContext>
+</beans>

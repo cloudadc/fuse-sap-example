@@ -3,15 +3,15 @@
     xmlns:camel="http://camel.apache.org/schema/spring"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd                            http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd">
     <bean class="org.apache.activemq.camel.component.ActiveMQComponent" id="activemq">
-        <property name="brokerURL" value="tcp://localhost:61616"/>
-        <property name="userName" value="admin"/>
-        <property name="password" value="admin"/>
+        <property name="brokerURL" value="#{systemProperties['AMQ_BROKER_URL'] ?: 'tcp://localhost:61616'}"/>
+        <property name="userName" value="#{systemProperties['AMQ_USER'] ?: 'admin'}"/>
+        <property name="password" value="#{systemProperties['AMQ_PASSWORD'] ?: 'admin'}"/>
     </bean>
     <camelContext id="queueTargetContext" xmlns="http://camel.apache.org/schema/spring">
         <dataFormats>
             <xmljson encoding="UTF-8" id="xmljson" rootName="poline"/>
         </dataFormats>
-        <route id="xmlTojsonRoute">
+        <route id="jsonToXmlRoute">
             <from id="_from1" uri="activemq:topic:events.newPoline"/>
             <log id="logger" message="Receive a message from topic:events.newPoline"/>
             <unmarshal id="jsonToXML" ref="xmljson"/>

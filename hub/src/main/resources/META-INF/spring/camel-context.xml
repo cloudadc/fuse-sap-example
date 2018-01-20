@@ -5,19 +5,19 @@
     <bean class="com.redhat.poc.processor.PropertiesMappingProcessor" id="propsMappingProcessor"/>
     <bean class="com.redhat.poc.processor.DBMappingProcessor" id="dbMappingProcessor"/>
     <bean class="com.mysql.jdbc.jdbc2.optional.MysqlDataSource" id="dataSource">
-        <property name="serverName" value="localhost"/>
-        <property name="databaseName" value="test"/>
-        <property name="port" value="3306"/>
-        <property name="user" value="test_user"/>
-        <property name="password" value="redhat"/>
+        <property name="serverName" value="#{systemProperties['MYSQL_HOSTNAME'] ?: 'localhost'}"/>
+        <property name="databaseName" value="#{systemProperties['MYSQL_DBNAME'] ?: 'test'}"/>
+        <property name="port" value="#{systemProperties['MYSQL_DBPORT'] ?: '3306'}"/>
+        <property name="user" value="#{systemProperties['MYSQL_USER'] ?: 'test_user'}"/>
+        <property name="password" value="#{systemProperties['MYSQL_PASSWORD'] ?: 'redhat'}"/>
     </bean>
     <bean class="org.apache.camel.component.sql.SqlComponent" id="sql">
         <property name="dataSource" ref="dataSource"/>
     </bean>
     <bean class="org.apache.activemq.camel.component.ActiveMQComponent" id="activemq">
-        <property name="brokerURL" value="tcp://localhost:61616"/>
-        <property name="userName" value="admin"/>
-        <property name="password" value="admin"/>
+        <property name="brokerURL" value="#{systemProperties['AMQ_BROKER_URL'] ?: 'tcp://localhost:61616'}"/>
+        <property name="userName" value="#{systemProperties['AMQ_USER'] ?: 'admin'}"/>
+        <property name="password" value="#{systemProperties['AMQ_PASSWORD'] ?: 'admin'}"/>
     </bean>
     <camelContext id="integrationHubContext" xmlns="http://camel.apache.org/schema/spring">
         <!-- 
@@ -47,7 +47,6 @@
                 <to id="_to2" uri="direct:externalPropertiesMapping"/>
             </split>
         </route>
-        
         <!--
             The 'propertiesMappingRoute' route use the external properties to mapping the json attribute,
             after the external properties mapping, the json will be send to 'dbMappingRoute'  

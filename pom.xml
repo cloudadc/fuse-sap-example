@@ -12,6 +12,8 @@
     <module>service</module>
     <module>hub</module>
     <module>queue</module>
+    <module>sap-idoc</module>
+    <module>sap-rfc</module>
   </modules>
   <packaging>pom</packaging>
   <properties>
